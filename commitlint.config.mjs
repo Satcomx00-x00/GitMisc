@@ -1,5 +1,5 @@
 /** @type {import('@commitlint/types').UserConfig} */
-module.exports = {
+export default {
   extends: ['@commitlint/config-conventional'],
   ignores: [
     // Skip bootstrap / squash commits that predate this config
