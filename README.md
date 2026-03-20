@@ -91,3 +91,56 @@ Press **F5** to launch the Extension Development Host for testing.
 ## License
 
 MIT
+```mermaid
+flowchart TD
+    Dev["👨‍💻 Developer"] -->|"git commit -m 'feat: ...' \ngit push origin main"| Main["📌 push to main"]
+
+    Main --> CL["commitlint.yml\n▶ on push to main / PR"]
+    Main --> RL["cliff.yml (Release)\n▶ on push to main"]
+
+    subgraph Commitlint ["🔍 Commitlint CI"]
+        CL --> CL1["checkout (fetch-depth: 0)"]
+        CL1 --> CL2["wagoid/commitlint-github-action\nvalidates commits against\ncommitlint.config.mjs"]
+        CL2 -->|"✖ error"| CL_FAIL["❌ CI fails"]
+        CL2 -->|"✔ clean"| CL_OK["✅ CI passes"]
+    end
+
+    subgraph Release ["🚀 Release Pipeline (cliff.yml)"]
+        direction TB
+
+        subgraph J1 ["Job 1 — Test"]
+            T1["checkout"] --> T2["setup Bun"]
+            T2 --> T3["bun install --frozen-lockfile"]
+            T3 --> T4["bun run lint\ntsc --noEmit"]
+            T4 --> T5["bun run test\nvitest run"]
+        end
+
+        subgraph J2 ["Job 2 — Tag  (needs: test)"]
+            G1["checkout (fetch-depth: 0)"] --> G2["mathieudutour/github-tag-action\nreads conventional commits\nsince last tag"]
+            G2 -->|"feat → minor\nfix → patch\nBREAKING → major"| G3["🏷️ push tag  vX.Y.Z"]
+            G2 -->|"chore/ci/docs only\n(default_bump: false)"| G4["⏭️ skip — no tag created"]
+        end
+
+        subgraph J3 ["Job 3 — Build  (needs: tag, if new_tag != '')"]
+            B1["checkout @ new tag"] --> B2["setup Bun"]
+            B2 --> B3["bun install --frozen-lockfile"]
+            B3 --> B4["bun run vsce:package\nbunx @vscode/vsce package\n--no-dependencies"]
+            B4 --> B5["📦 gitmisc-X.Y.Z.vsix"]
+            B5 --> B6["upload-artifact  vsix"]
+        end
+
+        subgraph J4 ["Job 4 — Release  (needs: tag + build)"]
+            R1["checkout @ new tag\n(fetch-depth: 0)"] --> R2["download-artifact  vsix"]
+            R2 --> R3["orhun/git-cliff-action\ncliff.toml --latest\n→ CHANGELOG.md"]
+            R3 --> R4["softprops/action-gh-release\nbody = cliff output\nfiles: *.vsix + CHANGELOG.md"]
+            R4 --> R5["🎉 GitHub Release published\n.vsix + CHANGELOG attached"]
+        end
+
+        J1 -->|"✔ tests green"| J2
+        J1 -->|"✖ tests fail"| STOP["🛑 pipeline stops"]
+        J2 -->|"new tag pushed"| J3
+        J3 -->|".vsix artifact ready"| J4
+    end
+
+    RL --> J1
+```
