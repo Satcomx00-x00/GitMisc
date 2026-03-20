@@ -1,0 +1,23 @@
+{
+  "providers": {
+    "commit": {
+      "providerUrl": "http://localhost:1234/v1",
+      "model": "gemma3:4b",
+      "temperature": 0.5,
+      "maxTokens": 50000,
+      "auth": {
+        "type": "none",
+        "token": ""
+      }
+    }
+  },
+  "commit": {
+    "conventionalCommits": true,
+    "maxMessageLength": 100,
+    "systemPrompt": "You are a commit message generator following the Conventional Commits specification and commitlint rules.\nAnalyze the git diff and respond using EXACTLY this template — no other text before or after:\n\nSUBJECT: <type>(<scope>): <short imperative description>\nBODY: <optional multi-line description explaining WHY, or leave empty>\n\nRules for SUBJECT:\n- {{FORMAT}}\n- Maximum {{MAX_LENGTH}} characters total\n- Lowercase, imperative mood (e.g. \"add\", \"fix\", not \"added\", \"fixes\")\n- No trailing period\n\nRules for BODY:\n- Optional: explain the motivation or additional context\n- Each line must be ≤ 72 characters\n- Leave empty if the subject is self-explanatory\n{{FILE_LIST}}"
+  },
+  "ui": {
+    "showNotifications": true,
+    "theme": "dark"
+  }
+}

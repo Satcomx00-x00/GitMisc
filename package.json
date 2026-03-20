@@ -1,0 +1,76 @@
+{
+  "name": "gitmisc",
+  "displayName": "GitMisc",
+  "description": "AI-powered commit message generation for the Source Control panel",
+  "version": "0.1.0",
+  "publisher": "Satcomx00-x00",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Satcomx00-x00/GitMisc"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitmisc.generateCommitMessage",
+        "title": "Generate Commit Message",
+        "icon": "$(sparkle)",
+        "category": "GitMisc"
+      },
+      {
+        "command": "gitmisc.openConfig",
+        "title": "Open Config",
+        "category": "GitMisc"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "gitmisc.generateCommitMessage",
+          "when": "scmProvider == git",
+          "group": "navigation@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "gitmisc.generateCommitMessage",
+          "when": "scmProvider == git"
+        },
+        {
+          "command": "gitmisc.openConfig"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "bun run compile -- --watch",
+    "package": "bun run compile -- --minify",
+    "lint": "tsc --noEmit",
+    "lint:test": "tsc --noEmit --project tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "commitlint": "commitlint --edit",
+    "vsce:package": "bunx @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.0",
+    "@commitlint/config-conventional": "^19.8.0",
+    "@types/node": "^25.5.0",
+    "@types/vscode": "^1.110.0",
+    "esbuild": "^0.27.4",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}

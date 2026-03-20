@@ -1,0 +1,38 @@
+{
+  // Editor
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "editor.rulers": [100],
+  "editor.tabSize": 2,
+
+  // TypeScript
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // File excludes (keep explorer clean)
+  "files.exclude": {
+    "node_modules": true,
+    "out": true,
+    "*.vsix": true
+  },
+
+  // Search excludes
+  "search.exclude": {
+    "node_modules": true,
+    "out": true,
+    "bun.lockb": true,
+    "package-lock.json": true
+  },
+
+  // Extension development
+  "extensions.ignoreRecommendations": false
+}
