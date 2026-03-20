@@ -62,7 +62,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "commitlint": "commitlint --edit",
-    "vsce:package": "bunx @vscode/vsce package --no-dependencies"
+    "vsce:package": "bun run package && bunx @vscode/vsce package --no-dependencies"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.0",
