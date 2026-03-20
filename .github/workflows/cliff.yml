@@ -45,6 +45,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag_prefix: v
+          fetch_all_tags: true
           # Only create a tag when feat/fix/breaking commits are present.
           # Set to false to skip tagging if no releasable commit is found.
           default_bump: false
