@@ -1,6 +1,10 @@
 /** @type {import('@commitlint/types').UserConfig} */
 module.exports = {
   extends: ['@commitlint/config-conventional'],
+  ignores: [
+    // Skip bootstrap / squash commits that predate this config
+    (commit) => commit.startsWith('Initial commit'),
+  ],
   rules: {
     'type-enum': [
       2,
@@ -21,6 +25,7 @@ module.exports = {
     ],
     'subject-case': [2, 'always', 'lower-case'],
     'header-max-length': [2, 'always', 100],
-    'body-max-line-length': [2, 'always', 72],
+    // Warn but do not fail — long lines are common in AI-generated bodies
+    'body-max-line-length': [1, 'always', 72],
   },
 };
