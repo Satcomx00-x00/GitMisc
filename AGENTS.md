@@ -713,7 +713,7 @@ This repository uses **Conventional Commits** enforced by `commitlint`.
 ### 12.3 Subject Rules (enforced by commitlint)
 
 - **`lower-case`** — no capital first letter
-- **Max 100 characters** for the header line
+- **Max 200 characters** for the header line
 - **No period** at the end of the subject
 - **Imperative mood** — "add feature", not "added" or "adds"
 

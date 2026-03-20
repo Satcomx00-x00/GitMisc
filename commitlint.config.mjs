@@ -24,7 +24,7 @@ export default {
       ],
     ],
     'subject-case': [1, 'always', 'lower-case'],
-    'header-max-length': [2, 'always', 100],
+    'header-max-length': [2, 'always', 200],
     // Warn but do not fail — long lines are common in AI-generated bodies
     'body-max-line-length': [1, 'always', 72],
   },
