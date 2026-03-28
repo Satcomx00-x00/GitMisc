@@ -28,8 +28,20 @@ export interface IAIProvider {
   generateMessage(systemPrompt: string, userContent: string): Promise<string>;
 }
 
+/** Generates a streaming completion from an AI provider via Server-Sent Events. */
+export interface IAIStreamingProvider extends IAIProvider {
+  streamMessage(
+    systemPrompt: string,
+    userContent: string,
+    signal?: AbortSignal,
+  ): AsyncIterable<string>;
+}
+
 /** Factory — creates a configured IAIProvider from runtime config. */
 export type AIProviderFactory = (config: ProviderConfig) => IAIProvider;
+
+/** Factory — creates a configured IAIStreamingProvider from runtime config. */
+export type AIStreamingProviderFactory = (config: ProviderConfig) => IAIStreamingProvider;
 
 /** Builds the system prompt sent to the AI. (O: extend with new prompt strategies) */
 export interface IPromptBuilder {

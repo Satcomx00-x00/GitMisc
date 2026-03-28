@@ -5,7 +5,9 @@ AI-powered commit message generation for VS Code's Source Control panel.
 ## Features
 
 - **One-click commit messages** — Press the ✨ button in the Source Control title bar to generate a commit message from your current diff
+- **AI chat assistant** — Use `@gitmisc` in the VS Code Chat panel to ask coding and git questions, powered by your own AI provider
 - **OpenAI-compatible** — Works with LM Studio, Ollama, OpenAI, or any OpenAI API-compatible provider
+- **Streaming responses** — Chat replies stream token-by-token for a responsive experience
 - **Conventional Commits** — Generates messages in `type(scope): description` format by default
 - **JWT authentication** — Supports Bearer token auth for AI gateways
 - **Workspace config** — Configure via a `config.json` file in your workspace root
@@ -76,6 +78,18 @@ Create or edit `config.json` in your workspace root:
 |---|---|
 | **GitMisc: Generate Commit Message** | Generate a commit message from the current diff |
 | **GitMisc: Open Config** | Open or create the `config.json` configuration file |
+
+## Chat Participant
+
+Type `@gitmisc` in the VS Code Chat panel to talk to your configured AI provider directly:
+
+```
+@gitmisc Why does my async function not return the expected value?
+@gitmisc Review this diff for potential bugs
+@gitmisc Explain the difference between rebase and merge
+```
+
+The chat participant uses the same provider configuration as the commit-message feature (`providers.commit` in `config.json`) and streams responses token-by-token.
 
 ## Development
 

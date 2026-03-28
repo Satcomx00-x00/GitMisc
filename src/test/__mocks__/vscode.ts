@@ -38,6 +38,16 @@ export const extensions = {
   getExtension: (_id: string) => undefined,
 };
 
+export const chat = {
+  createChatParticipant: (
+    _id: string,
+    _handler: unknown,
+  ): { iconPath: unknown; dispose: () => void } => ({
+    iconPath: undefined,
+    dispose: () => {},
+  }),
+};
+
 export class Uri {
   static file(path: string) {
     return { fsPath: path, scheme: 'file' };
@@ -49,4 +59,8 @@ export class Disposable {
   dispose() {
     this.callOnDispose();
   }
+}
+
+export class ThemeIcon {
+  constructor(public readonly id: string) {}
 }

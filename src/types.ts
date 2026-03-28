@@ -85,6 +85,19 @@ export interface ChatCompletionResponse {
   readonly choices: readonly ChatCompletionChoice[];
 }
 
+// ── OpenAI-compatible streaming API ──
+
+export interface ChatCompletionChunkChoice {
+  readonly index: number;
+  readonly delta: Partial<ChatMessage>;
+  readonly finish_reason: string | null;
+}
+
+export interface ChatCompletionChunk {
+  readonly id: string;
+  readonly choices: readonly ChatCompletionChunkChoice[];
+}
+
 // ── Git extension types (vscode.git) ──
 
 export interface GitExtension {

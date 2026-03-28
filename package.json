@@ -21,6 +21,15 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "chatParticipants": [
+      {
+        "id": "gitmisc.assistant",
+        "name": "gitmisc",
+        "fullName": "GitMisc AI Assistant",
+        "description": "Ask coding and git questions answered by your own OpenAI-compatible AI provider",
+        "isSticky": false
+      }
+    ],
     "commands": [
       {
         "command": "gitmisc.generateCommitMessage",
