@@ -7,7 +7,7 @@ import { ConfigService } from './services/ConfigService';
 import { TokenResolver } from './services/TokenResolver';
 import { GitService } from './services/GitService';
 import { OpenAIProvider } from './services/OpenAIProvider';
-import { ConventionalCommitPromptBuilder } from './services/PromptBuilder';
+import { CopilotCommitPromptBuilder } from './services/PromptBuilder';
 import { ResponseParser } from './services/ResponseParser';
 import { VSCodeNotifier } from './services/Notifier';
 import { GenerateCommitCommand } from './commands/generateCommit';
@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const configService = new ConfigService();
   const tokenResolver = new TokenResolver();
   const gitService = new GitService();
-  const promptBuilder = new ConventionalCommitPromptBuilder();
+  const promptBuilder = new CopilotCommitPromptBuilder();
   const responseParser = new ResponseParser();
   const notifier = new VSCodeNotifier();
 

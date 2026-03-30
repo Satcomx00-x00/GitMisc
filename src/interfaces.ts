@@ -1,5 +1,5 @@
 import type * as vscode from 'vscode';
-import type { Config, CommitConfig, DiffResult, ParsedCommitMessage, ProviderConfig, Repository } from './types';
+import type { Config, CommitConfig, CommitContext, BuiltPrompt, ParsedCommitMessage, ProviderConfig, Repository } from './types';
 
 // ── S: Single Responsibility — each interface owns one concern ──
 // ── I: Interface Segregation — clients depend only on what they use ──
@@ -20,7 +20,7 @@ export interface ITokenResolver {
 export interface IGitService {
   isAvailable(): boolean;
   getRepository(): Repository | undefined;
-  getDiff(repo: Repository): Promise<DiffResult>;
+  getDiff(repo: Repository): Promise<CommitContext>;
 }
 
 /** Generates a completion from an AI provider. (O: swap implementations without modifying callers) */
@@ -31,9 +31,9 @@ export interface IAIProvider {
 /** Factory — creates a configured IAIProvider from runtime config. */
 export type AIProviderFactory = (config: ProviderConfig) => IAIProvider;
 
-/** Builds the system prompt sent to the AI. (O: extend with new prompt strategies) */
+/** Builds the system and user prompts sent to the AI. (O: extend with new prompt strategies) */
 export interface IPromptBuilder {
-  build(commitConfig: CommitConfig, files: readonly string[]): string;
+  build(commitConfig: CommitConfig, context: CommitContext): BuiltPrompt;
 }
 
 /** Parses the raw AI response into a structured commit message. */
