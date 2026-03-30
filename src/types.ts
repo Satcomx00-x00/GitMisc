@@ -24,7 +24,8 @@ export interface ProviderConfig {
 export interface CommitConfig {
   readonly conventionalCommits: boolean;
   readonly maxMessageLength: number;
-  readonly systemPrompt: string;
+  /** Optional user-provided custom instructions appended to the generated prompt. */
+  readonly customInstructions: string;
 }
 
 // ── UI ──
@@ -44,11 +45,26 @@ export interface Config {
   readonly ui: UIConfig;
 }
 
-// ── Diff result ──
+// ── Commit context ──
 
-export interface DiffResult {
+export interface CommitContext {
+  /** Combined diff string (staged or unstaged). */
   readonly diff: string;
+  /** Base names of changed files. */
   readonly files: readonly string[];
+  /** Human-readable repository name (basename of root path). */
+  readonly repositoryName: string;
+  /** Active branch name, or empty string when unavailable. */
+  readonly branchName: string;
+  /** Recent commit messages from the repository, for style reference. */
+  readonly recentCommitMessages: readonly string[];
+}
+
+// ── Built prompt (system + user messages) ──
+
+export interface BuiltPrompt {
+  readonly systemMessage: string;
+  readonly userMessage: string;
 }
 
 // ── Parsed AI response ──
@@ -95,11 +111,25 @@ export interface GitAPI {
   readonly repositories: readonly Repository[];
 }
 
+export interface LogOptions {
+  readonly maxEntries?: number;
+}
+
+export interface Commit {
+  readonly hash: string;
+  readonly message: string;
+}
+
+export interface Head {
+  readonly name?: string;
+}
+
 export interface Repository {
   readonly rootUri: vscode.Uri;
   readonly inputBox: InputBox;
   readonly state: RepositoryState;
   diff(cached?: boolean): Promise<string>;
+  log(options?: LogOptions): Promise<readonly Commit[]>;
 }
 
 export interface InputBox {
@@ -110,6 +140,7 @@ export interface RepositoryState {
   readonly workingTreeChanges: readonly Change[];
   readonly indexChanges: readonly Change[];
   readonly mergeChanges: readonly Change[];
+  readonly HEAD?: Head;
 }
 
 export interface Change {

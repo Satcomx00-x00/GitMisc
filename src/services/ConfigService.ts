@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import type { Config } from '../types';
+import type { CommitConfig, Config } from '../types';
 import type { IConfigService } from '../interfaces';
 
 const DEFAULT_CONFIG: Config = {
@@ -16,25 +16,7 @@ const DEFAULT_CONFIG: Config = {
   commit: {
     conventionalCommits: true,
     maxMessageLength: 100,
-    systemPrompt: [
-      'You are a commit message generator following the Conventional Commits specification and commitlint rules.',
-      'Analyze the git diff and respond using EXACTLY this template — no other text before or after:',
-      '',
-      'SUBJECT: <type>(<scope>): <short imperative description>',
-      'BODY: <optional multi-line description explaining WHY, or leave empty>',
-      '',
-      'Rules for SUBJECT:',
-      '- {{FORMAT}}',
-      '- Maximum {{MAX_LENGTH}} characters total',
-      '- Lowercase, imperative mood (e.g. "add", "fix", not "added", "fixes")',
-      '- No trailing period',
-      '',
-      'Rules for BODY:',
-      '- Optional: explain the motivation or additional context',
-      '- Each line must be ≤ 72 characters',
-      '- Leave empty if the subject is self-explanatory',
-      '{{FILE_LIST}}',
-    ].join('\n'),
+    customInstructions: '',
   },
   ui: {
     showNotifications: true,
@@ -111,6 +93,16 @@ export class ConfigService implements IConfigService {
   }
 
   private static merge(defaults: Config, overrides: Partial<Config>): Config {
+    const commitOverride: Partial<CommitConfig> = overrides.commit ?? {};
+
+    // Support migration from legacy `systemPrompt` field to `customInstructions`
+    const legacyRecord = commitOverride as Record<string, unknown>;
+    const customInstructions =
+      commitOverride.customInstructions ??
+      (typeof legacyRecord['systemPrompt'] === 'string'
+        ? (legacyRecord['systemPrompt'] as string)
+        : defaults.commit.customInstructions);
+
     return {
       providers: {
         commit: {
@@ -126,7 +118,8 @@ export class ConfigService implements IConfigService {
       },
       commit: {
         ...defaults.commit,
-        ...overrides.commit,
+        ...commitOverride,
+        customInstructions,
       },
       ui: {
         ...defaults.ui,

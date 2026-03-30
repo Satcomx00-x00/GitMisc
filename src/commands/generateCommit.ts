@@ -29,17 +29,17 @@ export class GenerateCommitCommand {
       },
       async () => {
         try {
-          const { diff, files } = await this.gitService.getDiff(repo);
+          const context = await this.gitService.getDiff(repo);
 
-          if (!diff.trim()) {
+          if (!context.diff.trim()) {
             this.notifier.warn('GitMisc: No changes to generate a commit message for.');
             return;
           }
 
           const config = this.configService.getConfig();
-          const systemPrompt = this.promptBuilder.build(config.commit, files);
+          const { systemMessage, userMessage } = this.promptBuilder.build(config.commit, context);
           const aiProvider = this.aiProviderFactory(config.providers.commit);
-          const raw = await aiProvider.generateMessage(systemPrompt, diff);
+          const raw = await aiProvider.generateMessage(systemMessage, userMessage);
 
           const { subject, body } = this.responseParser.parse(raw);
 

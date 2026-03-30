@@ -4,6 +4,8 @@ export default {
   ignores: [
     // Skip bootstrap / squash commits that predate this config
     (commit) => commit.startsWith('Initial commit'),
+    // Skip agent planning/scaffolding commits
+    (commit) => commit.startsWith('Initial plan'),
   ],
   rules: {
     'type-enum': [

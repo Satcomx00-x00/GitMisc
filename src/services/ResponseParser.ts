@@ -2,57 +2,44 @@ import type { ParsedCommitMessage } from '../types';
 import type { IResponseParser } from '../interfaces';
 
 /**
- * SRP: Responsible only for parsing the structured SUBJECT/BODY response
- *      emitted by the AI according to the configured system prompt template.
+ * SRP: Responsible only for parsing the AI response into a structured commit message.
  *
- * Expected AI output format:
- *   SUBJECT: feat(scope): short description
- *   BODY: optional multi-line body
- *         that can span several lines
+ * Expected AI output format (Copilot-style):
+ *   ```text
+ *   type(scope): short description
  *
- * Fallback: if the format is not followed, the entire raw response is treated
- * as the subject and the body is left empty.
+ *   optional body
+ *   ```
+ *
+ * Fallback: if the response is not wrapped in a ```text code block, the entire
+ * raw response is used directly as a Git commit message (first line = subject,
+ * rest = body after an optional blank separator line).
  */
 export class ResponseParser implements IResponseParser {
-  private static readonly SUBJECT_PREFIX = 'SUBJECT:';
-  private static readonly BODY_PREFIX = 'BODY:';
+  private static readonly TEXT_CODE_BLOCK_RE = /```text\s*([\s\S]+?)\s*```/;
 
   parse(raw: string): ParsedCommitMessage {
-    const lines = raw.split('\n');
+    const trimmed = raw.trim();
+    const match = ResponseParser.TEXT_CODE_BLOCK_RE.exec(trimmed);
+    const commitMessage = (match?.[1] ?? trimmed).trim();
 
-    let subject = '';
-    let bodyLines: string[] = [];
-    let inBody = false;
+    return ResponseParser.splitIntoSubjectAndBody(commitMessage);
+  }
 
-    for (const line of lines) {
-      const trimmed = line.trim();
+  private static splitIntoSubjectAndBody(message: string): ParsedCommitMessage {
+    const lines = message.split('\n');
+    const subject = lines[0]?.trim() ?? '';
 
-      if (!inBody && trimmed.toUpperCase().startsWith(ResponseParser.SUBJECT_PREFIX)) {
-        subject = trimmed.slice(ResponseParser.SUBJECT_PREFIX.length).trim();
-        continue;
-      }
-
-      if (trimmed.toUpperCase().startsWith(ResponseParser.BODY_PREFIX)) {
-        inBody = true;
-        const bodyFirstLine = trimmed.slice(ResponseParser.BODY_PREFIX.length).trim();
-        if (bodyFirstLine) {
-          bodyLines.push(bodyFirstLine);
-        }
-        continue;
-      }
-
-      if (inBody) {
-        bodyLines.push(line); // preserve original indentation in body
-      }
+    // Standard Git format: subject line, optional blank line, body
+    let bodyStart = 1;
+    if (lines[1]?.trim() === '') {
+      bodyStart = 2;
     }
 
-    // Fallback: model did not follow the template
-    if (!subject) {
-      return { subject: raw.trim(), body: '' };
-    }
+    const bodyLines = lines.slice(bodyStart);
 
-    // Trim trailing blank lines from body
-    while (bodyLines.length > 0 && bodyLines[bodyLines.length - 1].trim() === '') {
+    // Trim trailing blank lines
+    while (bodyLines.length > 0 && bodyLines[bodyLines.length - 1]?.trim() === '') {
       bodyLines.pop();
     }
 

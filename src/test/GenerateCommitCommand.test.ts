@@ -9,14 +9,14 @@ import type {
     IPromptBuilder,
     IResponseParser,
 } from '../interfaces';
-import type { Config, DiffResult, Repository } from '../types';
+import type { BuiltPrompt, CommitContext, Config, Repository } from '../types';
 
 // ── Shared fixtures ──────────────────────────────────────────────────────────
 
 function makeConfig(overrides: Partial<Config['commit']> = {}): Config {
   return {
     providers: { commit: { providerUrl: '', model: '', temperature: 0.5, maxTokens: 1000 } },
-    commit: { conventionalCommits: true, maxMessageLength: 100, systemPrompt: '', ...overrides },
+    commit: { conventionalCommits: true, maxMessageLength: 100, customInstructions: '', ...overrides },
     ui: { showNotifications: true, theme: 'dark' },
   };
 }
@@ -25,8 +25,20 @@ function makeRepo(initialValue = ''): Repository {
   return {
     rootUri: { fsPath: '/workspace', scheme: 'file' } as unknown as Repository['rootUri'],
     inputBox: { value: initialValue },
-    state: { workingTreeChanges: [], indexChanges: [], mergeChanges: [] },
+    state: { workingTreeChanges: [], indexChanges: [], mergeChanges: [], HEAD: { name: 'main' } },
     diff: vi.fn().mockResolvedValue(''),
+    log: vi.fn().mockResolvedValue([]),
+  };
+}
+
+function makeContext(overrides: Partial<CommitContext> = {}): CommitContext {
+  return {
+    diff: 'diff content',
+    files: ['file.ts'],
+    repositoryName: 'workspace',
+    branchName: 'main',
+    recentCommitMessages: [],
+    ...overrides,
   };
 }
 
@@ -34,7 +46,7 @@ function makeRepo(initialValue = ''): Repository {
 
 function buildDeps(overrides: {
   repo?: Repository | undefined;
-  diff?: DiffResult;
+  context?: CommitContext;
   rawAI?: string;
   config?: Partial<Config['commit']>;
   showNotifications?: boolean;
@@ -50,9 +62,6 @@ function buildDeps(overrides: {
   const repo = overrides.repo !== undefined ? overrides.repo : makeRepo();
   const config = makeConfig({
     ...overrides.config,
-    ...(overrides.showNotifications !== undefined
-      ? {}
-      : {}),
   });
   if (overrides.showNotifications !== undefined) {
     (config.ui as { showNotifications: boolean }).showNotifications = overrides.showNotifications;
@@ -67,26 +76,35 @@ function buildDeps(overrides: {
   const gitService: IGitService = {
     isAvailable: vi.fn(() => true),
     getRepository: vi.fn(() => repo),
-    getDiff: vi.fn(async () => overrides.diff ?? { diff: 'diff content', files: ['file.ts'] }),
+    getDiff: vi.fn(async () => overrides.context ?? makeContext()),
   };
 
   const mockProvider: IAIProvider = {
-    generateMessage: vi.fn(async () => overrides.rawAI ?? 'SUBJECT: feat: test\nBODY: '),
+    generateMessage: vi.fn(async () => overrides.rawAI ?? '```text\nfeat: test\n```'),
   };
   const aiProviderFactory: AIProviderFactory = vi.fn(() => mockProvider);
 
+  const builtPrompt: BuiltPrompt = { systemMessage: 'system', userMessage: 'user' };
   const promptBuilder: IPromptBuilder = {
-    build: vi.fn(() => 'system prompt'),
+    build: vi.fn(() => builtPrompt),
   };
 
   const responseParser: IResponseParser = {
     parse: vi.fn((raw: string) => {
-      // Real parser logic for integration fidelity
-      const subjectMatch = raw.match(/^SUBJECT:\s*(.+)/im);
-      const bodyMatch = raw.match(/^BODY:\s*([\s\S]*)/im);
-      const subject = subjectMatch ? subjectMatch[1].trim() : raw.trim();
-      const body = bodyMatch ? bodyMatch[1].trim() : '';
-      return { subject, body };
+      // Extract content from ```text block if present, otherwise use raw
+      const match = /```text\s*([\s\S]+?)\s*```/.exec(raw);
+      const message = (match?.[1] ?? raw).trim();
+      const lines = message.split('\n');
+      const subject = lines[0]?.trim() || message.trim();
+      let bodyStart = 1;
+      if (lines[1]?.trim() === '') {
+        bodyStart = 2;
+      }
+      const bodyLines = lines.slice(bodyStart);
+      while (bodyLines.length > 0 && bodyLines[bodyLines.length - 1]?.trim() === '') {
+        bodyLines.pop();
+      }
+      return { subject, body: bodyLines.join('\n') };
     }),
   };
 
@@ -128,7 +146,7 @@ describe('GenerateCommitCommand', () => {
   });
 
   it('warns the user when the diff is empty', async () => {
-    const deps = buildDeps({ diff: { diff: '   ', files: [] } });
+    const deps = buildDeps({ context: makeContext({ diff: '   ' }) });
     await makeCommand(deps).execute();
 
     expect(deps.notifier.warn).toHaveBeenCalledWith(expect.stringContaining('No changes'));
@@ -137,7 +155,7 @@ describe('GenerateCommitCommand', () => {
 
   it('sets inputBox.value to subject only when body is empty', async () => {
     const repo = makeRepo();
-    const deps = buildDeps({ repo, rawAI: 'SUBJECT: feat(scope): add feature\nBODY: ' });
+    const deps = buildDeps({ repo, rawAI: '```text\nfeat(scope): add feature\n```' });
 
     await makeCommand(deps).execute();
 
@@ -148,7 +166,7 @@ describe('GenerateCommitCommand', () => {
     const repo = makeRepo();
     const deps = buildDeps({
       repo,
-      rawAI: 'SUBJECT: fix(auth): handle expiry\nBODY: Token was not refreshed before expiry.',
+      rawAI: '```text\nfix(auth): handle expiry\n\nToken was not refreshed before expiry.\n```',
     });
 
     await makeCommand(deps).execute();
@@ -162,7 +180,7 @@ describe('GenerateCommitCommand', () => {
     const repo = makeRepo();
     const deps = buildDeps({
       repo,
-      rawAI: 'SUBJECT: feat: ' + 'a'.repeat(200),
+      rawAI: '```text\nfeat: ' + 'a'.repeat(200) + '\n```',
       config: { maxMessageLength: 20 },
     });
 
@@ -195,5 +213,25 @@ describe('GenerateCommitCommand', () => {
 
     expect(deps.notifier.error).toHaveBeenCalledWith(expect.stringContaining('Connection refused'));
     expect(deps.notifier.info).not.toHaveBeenCalled();
+  });
+
+  it('passes the full CommitContext to the prompt builder', async () => {
+    const context = makeContext({
+      repositoryName: 'my-repo',
+      branchName: 'feature-x',
+      recentCommitMessages: ['feat: previous commit'],
+    });
+    const deps = buildDeps({ context });
+
+    await makeCommand(deps).execute();
+
+    expect(deps.promptBuilder.build).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        repositoryName: 'my-repo',
+        branchName: 'feature-x',
+        recentCommitMessages: ['feat: previous commit'],
+      }),
+    );
   });
 });
